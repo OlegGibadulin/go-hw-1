@@ -27,11 +27,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	uniqRes, err := uniq.Execute(input, options)
-	if err != nil {
-		log.Println(err)
-		os.Exit(3)
-	}
+	uniqRes := uniq.Execute(options, input)
 
 	outputFilename := flag.Arg(1)
 	if err := writeToFile(outputFilename, uniqRes); err != nil {

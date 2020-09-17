@@ -14,23 +14,40 @@ type Options struct {
 	IgnoreCase      bool
 }
 
-func Execute(src []string, options *Options) ([]string, error) {
-	knownStrings := make(map[string]int)
-	var uniqStrings []string
+func Execute(options *Options, src []string) []string {
+	if options == nil || src == nil {
+		return nil
+	}
+	uniqStrings, stringsCount := getUniqStrings(options, src)
+	uniqStrings = checkOptions(options, uniqStrings, stringsCount)
+	return uniqStrings
+}
 
-	for _, s := range src {
-		template := getStringTemplate(options, s)
-		if _, ok := knownStrings[template]; ok {
-			knownStrings[template]++
+func getUniqStrings(options *Options, src []string) ([]string, map[string]int) {
+	if len(src) == 0 {
+		return nil, nil
+	}
+	var uniqStrings []string
+	stringsCount := make(map[string]int)
+
+	prevString := src[0]
+	prevTemplate := getStringTemplate(options, src[0])
+	uniqCount := 1
+	for _, s := range src[1:] {
+		curTemplate := getStringTemplate(options, s)
+		if prevTemplate == curTemplate {
+			uniqCount++
 		} else {
-			uniqStrings = append(uniqStrings, s)
-			knownStrings[template] = 1
+			uniqStrings = append(uniqStrings, prevString)
+			stringsCount[prevString] = uniqCount
+			prevString = s
+			prevTemplate = curTemplate
+			uniqCount = 1
 		}
 	}
-
-	uniqStrings = checkOptions(options, knownStrings, uniqStrings)
-
-	return uniqStrings, nil
+	uniqStrings = append(uniqStrings, prevString)
+	stringsCount[prevString] = uniqCount
+	return uniqStrings, stringsCount
 }
 
 func getStringTemplate(options *Options, s string) string {
@@ -57,30 +74,25 @@ func getStringTemplate(options *Options, s string) string {
 		}
 	}
 	return template
-
 }
 
-func getStringCount(options *Options, knownStrings map[string]int, s string) int {
-	template := getStringTemplate(options, s)
-	if options.IgnoreCase {
-		template = strings.ToLower(s)
-	}
-	return knownStrings[template]
-}
-
-func checkOptions(options *Options, knownStrings map[string]int, uniqStrings []string) []string {
-	uniqStrings = checkNeedCount(options, knownStrings, uniqStrings)
-	uniqStrings = checkOnlyRepeated(options, knownStrings, uniqStrings)
-	uniqStrings = checkOnlyUnique(options, knownStrings, uniqStrings)
+func checkOptions(options *Options, uniqStrings []string, stringsCount map[string]int) []string {
+	uniqStrings = checkNeedCount(options, uniqStrings, stringsCount)
+	uniqStrings = checkOnlyRepeated(options, uniqStrings, stringsCount)
+	uniqStrings = checkOnlyUnique(options, uniqStrings, stringsCount)
 	return uniqStrings
 }
 
-func checkNeedCount(options *Options, knownStrings map[string]int, uniqStrings []string) []string {
+func checkNeedCount(options *Options, uniqStrings []string, stringsCount map[string]int) []string {
 	var res []string
 	if options.NeedCount {
 		for _, s := range uniqStrings {
-			count := getStringCount(options, knownStrings, s)
-			resString := strconv.Itoa(count) + " " + s
+			count := stringsCount[s]
+			resString := strconv.Itoa(count)
+			if s != "" {
+				resString += " "
+			}
+			resString += s
 			res = append(res, resString)
 		}
 		return res
@@ -88,11 +100,11 @@ func checkNeedCount(options *Options, knownStrings map[string]int, uniqStrings [
 	return uniqStrings
 }
 
-func checkOnlyRepeated(options *Options, knownStrings map[string]int, uniqStrings []string) []string {
+func checkOnlyRepeated(options *Options, uniqStrings []string, stringsCount map[string]int) []string {
 	var res []string
 	if options.OnlyRepeated {
 		for _, s := range uniqStrings {
-			count := getStringCount(options, knownStrings, s)
+			count := stringsCount[s]
 			if count > 1 {
 				res = append(res, s)
 			}
@@ -102,11 +114,11 @@ func checkOnlyRepeated(options *Options, knownStrings map[string]int, uniqString
 	return uniqStrings
 }
 
-func checkOnlyUnique(options *Options, knownStrings map[string]int, uniqStrings []string) []string {
+func checkOnlyUnique(options *Options, uniqStrings []string, stringsCount map[string]int) []string {
 	var res []string
 	if options.OnlyUnique {
 		for _, s := range uniqStrings {
-			count := getStringCount(options, knownStrings, s)
+			count := stringsCount[s]
 			if count == 1 {
 				res = append(res, s)
 			}
