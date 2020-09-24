@@ -12,16 +12,16 @@ type TestCase struct {
 	expected []string
 }
 
-func TestUniqExecute(t *testing.T) {
-	needCountOption := &Options{
-		NeedCount:       true,
-		OnlyRepeated:    false,
-		OnlyUnique:      false,
-		SkipFieldsCount: 0,
-		SkipCharsCount:  0,
-		IgnoreCase:      false,
-	}
+var needCountOption = &Options{
+	NeedCount:       true,
+	OnlyRepeated:    false,
+	OnlyUnique:      false,
+	SkipFieldsCount: 0,
+	SkipCharsCount:  0,
+	IgnoreCase:      false,
+}
 
+func TestCheckSuccess(t *testing.T) {
 	onlyRepeatedOption := &Options{
 		NeedCount:       false,
 		OnlyRepeated:    true,
@@ -115,30 +115,6 @@ func TestUniqExecute(t *testing.T) {
 	}
 
 	cases := []TestCase{
-		TestCase{
-			name:     "Nil options",
-			options:  nil,
-			src:      []string{},
-			expected: nil,
-		},
-		TestCase{
-			name:     "Nil src",
-			options:  new(Options),
-			src:      nil,
-			expected: nil,
-		},
-		TestCase{
-			name:     "Empty input",
-			options:  new(Options),
-			src:      []string{},
-			expected: nil,
-		},
-		TestCase{
-			name:     "Empty input with some option",
-			options:  needCountOption,
-			src:      []string{},
-			expected: nil,
-		},
 		TestCase{
 			name:    "Default options",
 			options: new(Options),
@@ -238,6 +214,40 @@ func TestUniqExecute(t *testing.T) {
 				"I love music of Kartik.",
 				"Thanks.",
 			},
+		},
+	}
+
+	for _, tc := range cases {
+		actual := Execute(tc.options, tc.src)
+		require.Equal(t, actual, tc.expected, tc.name)
+	}
+}
+
+func TestCheckFail(t *testing.T) {
+	cases := []TestCase{
+		TestCase{
+			name:     "Nil options",
+			options:  nil,
+			src:      []string{},
+			expected: nil,
+		},
+		TestCase{
+			name:     "Nil src",
+			options:  new(Options),
+			src:      nil,
+			expected: nil,
+		},
+		TestCase{
+			name:     "Empty input",
+			options:  new(Options),
+			src:      []string{},
+			expected: nil,
+		},
+		TestCase{
+			name:     "Empty input with some option",
+			options:  needCountOption,
+			src:      []string{},
+			expected: nil,
 		},
 	}
 
