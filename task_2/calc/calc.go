@@ -10,23 +10,23 @@ import (
 )
 
 func Calculate(expr string) (float64, error) {
-	values := stack.New()
-	ops := stack.New()
+	numbers := stack.New()
+	operators := stack.New()
 
 	for i := 0; i < len(expr); i++ {
 		token := rune(expr[i])
 
 		if unicode.IsDigit(token) {
 			// Parse number
-			number := ""
+			val := ""
 			for ; i < len(expr) && (unicode.IsDigit(rune(expr[i])) || expr[i] == '.'); i++ {
-				number += string(expr[i])
+				val += string(expr[i])
 			}
-			val, err := strconv.ParseFloat(number, 64)
+			number, err := strconv.ParseFloat(val, 64)
 			if err != nil {
 				return 0, err
 			}
-			values.Push(val)
+			numbers.Push(number)
 
 			if i == len(expr) {
 				break
@@ -38,60 +38,65 @@ func Calculate(expr string) (float64, error) {
 			continue
 		}
 		if token == '(' {
-			ops.Push(token)
+			operators.Push(token)
 		} else if token == ')' {
 			// Calculate inside brackets
-			for !ops.Empty() && ops.Top() != '(' {
-				res, err := performCalc(values, ops)
+			for !operators.Empty() && operators.Top() != '(' {
+				res, err := performCalculation(numbers, operators)
 				if err != nil {
 					return 0, err
 				}
-				values.Push(res)
+				numbers.Push(res)
 			}
-			_ = ops.Pop()
+			_ = operators.Pop()
 		} else {
 			// Current token is operator
-			if values.Empty() {
+			if numbers.Empty() {
 				return 0, errors.New("Wrong input data")
 			}
-			for !ops.Empty() && priority(ops.Top().(rune)) >= priority(token) {
-				res, err := performCalc(values, ops)
+			for !operators.Empty() && priority(operators.Top().(rune)) >= priority(token) {
+				res, err := performCalculation(numbers, operators)
 				if err != nil {
 					return 0, err
 				}
-				values.Push(res)
+				numbers.Push(res)
 			}
-			ops.Push(token)
+			operators.Push(token)
 		}
 	}
 
-	if values.Empty() && ops.Empty() {
-		// Input string is empty or contains only spaces
-		return 0, nil
+	if operators.Empty() {
+		if numbers.Empty() {
+			// Input string is empty or contains only spaces
+			return 0, nil
+		} else if numbers.Len() == 1 {
+			// Input string contains only single number
+			res := numbers.Pop().(float64)
+			return res, nil
+		}
 	}
 
-	if values.Len() == 1 {
-		// Input string contains single number
-		res := values.Pop().(float64)
-		return res, nil
+	if numbers.Len() != operators.Len()+1 {
+		// There are extra numbers
+		return 0, errors.New("Wrong input data")
 	}
 
 	// Calculate the ramaining part without brackets
-	for !ops.Empty() {
-		res, err := performCalc(values, ops)
+	for !operators.Empty() {
+		res, err := performCalculation(numbers, operators)
 		if err != nil {
 			return 0, err
 		}
-		values.Push(res)
+		numbers.Push(res)
 	}
-	res := values.Pop().(float64)
+	res := numbers.Pop().(float64)
 	return res, nil
 }
 
-func performCalc(values *stack.Stack, ops *stack.Stack) (float64, error) {
-	secondVal := values.Pop()
-	firstVal := values.Pop()
-	operator := ops.Pop()
+func performCalculation(numbers *stack.Stack, operators *stack.Stack) (float64, error) {
+	secondVal := numbers.Pop()
+	firstVal := numbers.Pop()
+	operator := operators.Pop()
 	if secondVal == nil || firstVal == nil || operator == nil {
 		return 0, errors.New("Wrong input data")
 	}

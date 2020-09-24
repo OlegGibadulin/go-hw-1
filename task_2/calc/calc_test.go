@@ -124,11 +124,16 @@ func TestCheckFail(t *testing.T) {
 			expr: "(1 + * 1)",
 			err:  errors.New("Wrong input data"),
 		},
-		// TestCase{
-		// 	name: "",
-		// 	expr: "1 1",
-		// 	err:  errors.New("Wrong input data"),
-		// },
+		TestCase{
+			name: "Only numbers",
+			expr: "1 1",
+			err:  errors.New("Wrong input data"),
+		},
+		TestCase{
+			name: "Extra numbers",
+			expr: "1 * 10 10",
+			err:  errors.New("Wrong input data"),
+		},
 		TestCase{
 			name: "A few points in float number",
 			expr: "1 + 1.2.2",
